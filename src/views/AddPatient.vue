@@ -16,9 +16,6 @@
       <!-- Información Personal -->
       <div class="form-section">
         <h3 class="section-title">
-          <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-          </svg>
           Información Personal
         </h3>
         
@@ -68,27 +65,11 @@
             >
           </div>
         </div>
-
-        <div class="form-group">
-          <label for="age">Edad *</label>
-          <input 
-            type="number" 
-            id="age" 
-            v-model="form.age" 
-            placeholder="Ej: 35"
-            min="0"
-            max="150"
-            required
-          >
-        </div>
       </div>
 
       <!-- Información Física -->
       <div class="form-section">
         <h3 class="section-title">
-          <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-          </svg>
           Información Física
         </h3>
         
@@ -120,9 +101,6 @@
       <!-- Información Médica -->
       <div class="form-section">
         <h3 class="section-title">
-          <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M19 8h-2v3h-3v2h3v3h2v-3h3v-2h-3V8zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 14H9c-.55 0-1-.45-1-1V5c0-.55.45-1 1-1h10c.55 0 1 .45 1 1v10c0 .55-.45 1-1 1z"/>
-          </svg>
           Información Médica
         </h3>
         
@@ -141,9 +119,6 @@
       <!-- Notas Adicionales -->
       <div class="form-section">
         <h3 class="section-title">
-          <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-          </svg>
           Notas Adicionales
         </h3>
         
@@ -159,7 +134,7 @@
 
       <div class="form-actions">
         <button type="button" class="btn-secondary" @click="goBack">Cancelar</button>
-        <button type="submit" class="btn-primary">Registrar Paciente</button>
+        <button type="submit" class="save-patient"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="18" viewBox="0 0 24 24"><path fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.25 21v-4.765a1.59 1.59 0 0 0-1.594-1.588H9.344a1.59 1.59 0 0 0-1.594 1.588V21m8.5-17.715v2.362a1.59 1.59 0 0 1-1.594 1.588H9.344A1.59 1.59 0 0 1 7.75 5.647V3m8.5.285A3.2 3.2 0 0 0 14.93 3H7.75m8.5.285c.344.156.661.374.934.645l2.382 2.375A3.17 3.17 0 0 1 20.5 8.55v9.272A3.18 3.18 0 0 1 17.313 21H6.688A3.18 3.18 0 0 1 3.5 17.823V6.176A3.18 3.18 0 0 1 6.688 3H7.75"/></svg> Registrar Paciente</button>
       </div>
     </form>
   </div>
@@ -169,53 +144,68 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePatientStore } from '../store/patientStore'
+import { useAuthStore } from '../store/authStore'
 
 const router = useRouter()
 const patientStore = usePatientStore()
+const authStore = useAuthStore()
 
 const form = ref({
   name: '',
   lastName: '',
   phone: '',
   birthDate: '',
-  age: '',
   height: '',
   weight: '',
   treatment: '',
   notes: ''
 })
 
+const errorMessage = ref('')
+const isLoading = ref(false)
+
 const goBack = () => {
   router.push('/')
 }
 
-const submitForm = () => {
-  // Calculate age from birth date if not provided
-  let age = form.value.age
-  if (form.value.birthDate && !age) {
-    const today = new Date()
-    const birthDate = new Date(form.value.birthDate)
-    age = today.getFullYear() - birthDate.getFullYear()
-    const monthDiff = today.getMonth() - birthDate.getMonth()
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--
+const submitForm = async () => {
+  errorMessage.value = ''
+  isLoading.value = true
+  try {
+    // Calcular edad si no está proporcionada
+    let age = form.value.age
+    if (form.value.birthDate && !age) {
+      const today = new Date()
+      const birthDate = new Date(form.value.birthDate)
+      age = today.getFullYear() - birthDate.getFullYear()
+      const monthDiff = today.getMonth() - birthDate.getMonth()
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--
+      }
     }
-  }
 
-  const patient = {
-    name: form.value.name,
-    lastName: form.value.lastName,
-    phone: form.value.phone,
-    birthDate: form.value.birthDate,
-    age: parseInt(age),
-    height: form.value.height,
-    weight: form.value.weight,
-    treatment: form.value.treatment,
-    notes: form.value.notes
-  }
+    // Obtener el user_id del usuario autenticado
+    const user_id = authStore.user?.id || authStore.user?.user_id || 1 // fallback a 1 si no existe
 
-  patientStore.addPatient(patient)
-  router.push('/')
+    const patient = {
+      name: form.value.name,
+      last_name: form.value.lastName,
+      phone: form.value.phone,
+      age: parseInt(age),
+      user_id,
+      height: form.value.height,
+      weight: form.value.weight,
+      treatment: form.value.treatment,
+      notes: form.value.notes
+    }
+
+    await patientStore.createPatient(patient)
+    router.push('/')
+  } catch (error) {
+    errorMessage.value = error.message || 'Error al crear paciente'
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
@@ -238,7 +228,7 @@ const submitForm = () => {
 
 .form-subtitle {
   font-size: 16px;
-  color: #6c757d;
+  color: #000;
   margin: 0;
 }
 
@@ -259,7 +249,16 @@ const submitForm = () => {
   display: flex;
   gap: 16px;
   justify-content: flex-end;
-  padding-top: 24px;
+  margin-bottom: 40px
+}
+
+.form-actions .save-patient {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #000;
+  color: white;
+  padding: 7px 20px 9px;
 }
 
 .back-icon {

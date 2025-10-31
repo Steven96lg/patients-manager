@@ -2,16 +2,28 @@
   <header class="header">
     <div class="header-content">
       <div class="header-left">
-        <h1 class="app-title">Gestión de Pacientes</h1>
+        <h1 class="app-title">{{ authStore.user?.username || '' }}</h1>
       </div>
       
       <div class="header-right">
-        <div class="user-menu" ref="userMenuRef">
+        <!-- Botón de inicio de sesión cuando no está autenticado -->
+        <router-link 
+          v-if="!isAuthenticated" 
+          to="/login" 
+          class="login-button"
+        >
+          Iniciar Sesión
+        </router-link>
+
+        <!-- Menú de usuario cuando está autenticado -->
+        <div v-else class="user-menu" ref="userMenuRef">
           <button class="user-button" @click="toggleMenu">
             <svg class="user-icon" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
             </svg>
-            <span class="user-name">Dr. García</span>
+            <span class="user-name">
+              {{ authStore.user?.name || '' }} {{ authStore.user?.last_name || '' }}
+            </span>
           </button>
           
           <div v-if="isMenuOpen" class="dropdown-menu">
@@ -35,10 +47,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useAuthStore } from '../store/authStore'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
+const authStore = useAuthStore()
 const isMenuOpen = ref(false)
 const userMenuRef = ref(null)
+
+const isAuthenticated = computed(() => authStore.isAuthenticated)
+const userName = computed(() => authStore.user?.name || 'Usuario')
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
@@ -51,7 +70,10 @@ const updateInfo = () => {
 
 const logout = () => {
   isMenuOpen.value = false
-  alert('Función de cerrar sesión')
+  // Limpiar estado del store
+  authStore.logout()
+  // Manejar la navegación desde el componente para evitar import circular
+  router.push('/login')
 }
 
 const closeMenuOnClickOutside = (event) => {
@@ -167,5 +189,21 @@ onUnmounted(() => {
   width: 16px;
   height: 16px;
   color: #6c757d;
+}
+
+.login-button {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: #667eea;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.login-button:hover {
+  background-color: #764ba2;
+  transform: translateY(-1px);
 }
 </style>

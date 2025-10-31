@@ -2,32 +2,8 @@ import { defineStore } from 'pinia'
 
 export const usePatientStore = defineStore('patient', {
   state: () => ({
-    patients: [
-      {
-        id: 1,
-        name: 'Juan',
-        lastName: 'Pérez García',
-        phone: '+52 555 123 4567',
-        age: 35,
-        birthDate: '15 de Mayo, 1989',
-        height: '1.75 m',
-        weight: '75 kg',
-        treatment: 'Medicamento para presión arterial - Losartán 50mg, una vez al día por la mañana. Control mensual de presión arterial.',
-        notes: ''
-      },
-      {
-        id: 2,
-        name: 'María',
-        lastName: 'González López',
-        phone: '+52 555 987 6543',
-        age: 28,
-        birthDate: '22 de Marzo, 1996',
-        height: '1.65 m',
-        weight: '60 kg',
-        treatment: 'Consulta de rutina para control de peso y nutrición.',
-        notes: 'Paciente muy comprometida con su salud.'
-      }
-    ]
+    // Inicialmente vacío; se poblará desde el endpoint /api/patients
+    patients: []
   }),
   
   getters: {
@@ -37,6 +13,61 @@ export const usePatientStore = defineStore('patient', {
   },
   
   actions: {
+    async createPatient(patient) {
+      try {
+        const headers = { 'Content-Type': 'application/json' }
+        const token = localStorage.getItem('auth_token') || this.token
+        if (token) headers['Authorization'] = `Bearer ${token}`
+
+        const res = await fetch('http://localhost:8000/api/create_patient', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(patient)
+        })
+        if (!res.ok) {
+          const error = await res.json()
+          throw new Error(error.detail || 'No se pudo crear el paciente')
+        }
+        const newPatient = await res.json()
+        // Opcional: agregar el paciente al array local
+        this.patients.push({
+          id: newPatient.id,
+          name: newPatient.name,
+          lastName: newPatient.last_name || '',
+          phone: newPatient.phone || '',
+          age: newPatient.age || null
+        })
+        return newPatient
+      } catch (error) {
+        console.error('Error creando paciente:', error)
+        throw error
+      }
+    },
+    async fetchPatients() {
+      try {
+        const headers = { 'Content-Type': 'application/json' }
+        const token = localStorage.getItem('auth_token') || this.token
+        if (token) headers['Authorization'] = `Bearer ${token}`
+
+        const res = await fetch('http://localhost:8000/api/patients', { headers })
+        if (!res.ok) {
+          console.error('Error fetching patients:', res.status)
+          return
+        }
+        const data = await res.json()
+        const list = Array.isArray(data) ? data : (data.data || [])
+        this.patients = list.map(p => ({
+          id: p.id,
+          name: p.name,
+          lastName: p.last_name || p.lastName || '',
+          phone: p.phone || '',
+          age: p.age || null,
+          createdAt: p.created_at
+        }))
+      } catch (error) {
+        console.error('Error loading patients:', error)
+      }
+    },
     addPatient(patient) {
       const newId = Math.max(...this.patients.map(p => p.id)) + 1
       this.patients.push({ ...patient, id: newId })

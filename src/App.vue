@@ -1,14 +1,20 @@
 <template>
   <div id="app">
-    <Header />
-    <main>
+    <Header v-if="isAuthenticated" />
+    <main :class="{ 'no-header': !isAuthenticated }">
       <router-view />
     </main>
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useAuthStore } from './store/authStore'
 import Header from './components/Header.vue'
+
+const authStore = useAuthStore()
+// Rely only on the reactive store getter. localStorage fallback can mask reactivity issues.
+const isAuthenticated = computed(() => authStore.isAuthenticated)
 </script>
 
 <style>
@@ -28,6 +34,11 @@ main {
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+main.no-header {
+  padding: 0;
+  max-width: none;
 }
 
 button {
@@ -80,7 +91,7 @@ button:hover {
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
-  color: #495057;
+  color: #000;
 }
 
 .form-group input,
@@ -97,7 +108,7 @@ button:hover {
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: #000;
 }
 
 .form-row {
@@ -110,7 +121,7 @@ button:hover {
   font-size: 18px;
   font-weight: 700;
   margin-bottom: 16px;
-  color: #495057;
+  color: #000;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -125,7 +136,7 @@ button:hover {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #007bff;
+  color: #000;
   text-decoration: none;
   margin-bottom: 20px;
   font-weight: 500;

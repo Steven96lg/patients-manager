@@ -5,7 +5,8 @@ import { createPinia } from 'pinia'
 
 const app = createApp(App)
 
-app.use(router)
+// Register Pinia before the router to ensure stores are ready in all hooks/components
 app.use(createPinia())
+app.use(router)
 
 app.mount('#app')
