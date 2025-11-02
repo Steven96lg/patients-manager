@@ -28,8 +28,8 @@
           </thead>
           <tbody>
             <tr v-for="patient in patients" :key="patient.id">
-              <td>{{ patient.name }}</td>
-              <td>{{ patient.lastName }}</td>
+              <td class="patient-name">{{ patient.name }}</td>
+              <td class="patient-name">{{ patient.lastName }}</td>
               <td>
                 <button class="whats-app-button" @click="openWhatsApp(patient.phone)">
                   <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
@@ -64,7 +64,11 @@ import { usePatientStore } from '../store/patientStore'
 const router = useRouter()
 const patientStore = usePatientStore()
 
-const patients = computed(() => patientStore.patients)
+const patients = computed(() => {
+  return [...patientStore.patients].sort((a, b) => {
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+})
 
 const goToAddPatient = () => {
   router.push('/add-patient')
@@ -77,8 +81,8 @@ const viewPatient = (id) => {
 const formatDate = (date) => {
   if (!date) return '';
   const options = { year: 'numeric', month: 'long', day: 'numeric' };
-  // Ensure we use the local timezone when parsing the date
-  const dateObj = new Date(date + 'Z');
+  // La fecha ya viene en formato ISO con Z al final, no necesitamos añadir nada
+  const dateObj = new Date(date);
   return dateObj.toLocaleDateString('es-ES', options);
 };
 
@@ -168,6 +172,11 @@ onMounted(async () => {
   padding: 16px 12px;
   border-bottom: 1px solid #e9ecef;
   color: #495057;
+}
+
+.patient-table td.patient-name {
+  font-weight: 600;
+  color: #2d3748;
 }
 
 .patient-table td .whats-app-button {

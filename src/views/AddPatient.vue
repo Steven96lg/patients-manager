@@ -49,10 +49,17 @@
             <input 
               type="tel" 
               id="phone" 
-              v-model="form.phone" 
-              placeholder="Ej: +52 555 123 4567"
+              :value="form.phone"
+              @input="formatPhone"
+              @keypress="preventNonNumeric"
+              @paste="handlePhonePaste"
+              @blur="validatePhone"
+              placeholder="Ej: 5551234567"
               required
+              maxlength="10"
+              class="phone-input"
             >
+            <span v-if="errors.phone" class="error-message">{{ errors.phone }}</span>
           </div>
           
           <div class="form-group">
@@ -75,12 +82,13 @@
         
         <div class="form-row">
           <div class="form-group">
-            <label for="height">Altura *</label>
+            <label for="height">Altura (cm) *</label>
             <input 
               type="text" 
               id="height" 
-              v-model="form.height" 
-              placeholder="Ej: 1.75 m"
+              :value="form.height"
+              @input="formatHeight"
+              placeholder="Ej: 175"
               required
             >
           </div>
@@ -161,8 +169,52 @@ const form = ref({
   notes: ''
 })
 
+const errors = ref({
+  phone: '',
+  height: ''
+})
 const errorMessage = ref('')
 const isLoading = ref(false)
+
+const validatePhone = () => {
+  if (form.value.phone.length < 10) {
+    errors.value.phone = 'El número debe tener 10 dígitos'
+    return false
+  }
+  errors.value.phone = ''
+  return true
+}
+
+const formatPhone = (event) => {
+  // Remove any non-digit character
+  const value = event.target.value.replace(/\D/g, '')
+  // Limit to 10 digits
+  form.value.phone = value.substring(0, 10)
+}
+
+const formatHeight = (event) => {
+  // Remove any non-digit character
+  const value = event.target.value.replace(/\D/g, '')
+  form.value.height = value
+}
+
+const preventNonNumeric = (event) => {
+  // Prevent any non-numeric key press
+  const keyCode = event.keyCode || event.which
+  const keyValue = String.fromCharCode(keyCode)
+  const isNumeric = /^\d+$/.test(keyValue)
+  if (!isNumeric) {
+    event.preventDefault()
+  }
+}
+
+const handlePhonePaste = (event) => {
+  // Prevent paste if content contains non-numeric characters
+  event.preventDefault()
+  const pastedText = (event.clipboardData || window.clipboardData).getData('text')
+  const numericOnly = pastedText.replace(/\D/g, '')
+  form.value.phone = (form.value.phone + numericOnly).substring(0, 10)
+}
 
 const goBack = () => {
   router.push('/')
@@ -171,6 +223,11 @@ const goBack = () => {
 const submitForm = async () => {
   errorMessage.value = ''
   isLoading.value = true
+  
+  if (!validatePhone()) {
+    isLoading.value = false
+    return
+  }
   try {
     // Calcular edad si no está proporcionada
     let age = form.value.age
@@ -243,6 +300,82 @@ const submitForm = async () => {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 24px;
+}
+
+.error-message {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 4px;
+  display: block;
+}
+
+input[type="date"] {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  width: 100%;
+  color: #1f2937;
+  background-color: white;
+  cursor: pointer;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  padding: 4px;
+  margin-right: -4px;
+  opacity: 0.6;
+}
+
+input[type="date"]:hover::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+
+.phone-input {
+  font-family: monospace;
+  letter-spacing: 1px;
+}
+
+input[type="date"] {
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 1rem;
+  color: #1f2937;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+input[type="date"]:hover {
+  border-color: #9ca3af;
+}
+
+input[type="date"]:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  background-color: transparent;
+  padding: 4px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+input[type="date"]::-webkit-datetime-edit {
+  padding: 0;
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
 }
 
 .form-actions {

@@ -2,6 +2,10 @@
 
 ## [1.0.1] - 2025-10-31
 
+feat(02-11-2025): Se agrego el guardado de la nueva consulta
+
+## [1.0.1] - 2025-10-31
+
 fix(31-10-25): Corrección en la visualización de fechas de creación de pacientes
 
 ## [1.0.0] - 2025-10-14
@@ -24,5 +28,4 @@ feat(14-10-25): Primer prototipo del sistema de gestor de pacientes
 
 ### Proximos pasos
 - componetizar los elementos para mejor escalabilidad
-- se quito el campo edad del registro de pacientes, la edad se va a calcular en funcion de la fecha de nacimiento y la fecha actual
-- revisar que al momento de iniciar sesión el menu se muestre
+- modificar el endpoint para que solo se actualice la tabla de consultations

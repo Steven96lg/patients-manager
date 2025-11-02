@@ -29,11 +29,14 @@
             </div>
             <div class="info-item">
               <label class="info-label">Teléfono</label>
-              <p class="info-value">
-                <svg class="info-icon" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+              <p class="info-value phone-value">
+                <svg class="info-icon whatsapp-icon" fill="#25D366" viewBox="0 0 24 24">
+                  <path d="M8.886 7.17c.183.005.386.015.579.443c.128.285.343.81.519 1.238c.137.333.249.607.277.663c.064.128.104.275.02.448l-.028.058a1.4 1.4 0 0 1-.23.37l-.143.17c-.085.104-.17.206-.242.278c-.129.128-.262.266-.114.522s.668 1.098 1.435 1.777a6.6 6.6 0 0 0 1.903 1.2q.105.045.17.076c.257.128.41.108.558-.064c.149-.173.643-.749.817-1.005c.168-.256.34-.216.578-.128c.238.089 1.504.71 1.761.837l.143.07c.179.085.3.144.352.23c.064.109.064.62-.148 1.222c-.218.6-1.267 1.176-1.742 1.22l-.135.016c-.436.052-.988.12-2.956-.655c-2.426-.954-4.027-3.32-4.35-3.799l-.053-.076l-.006-.008c-.147-.197-1.048-1.402-1.048-2.646c0-1.19.587-1.81.854-2.092l.047-.05a.95.95 0 0 1 .687-.32c.173 0 .347 0 .495.005"/>
+                  <path fill="#25D366" fill-rule="evenodd" d="M2.184 21.331a.4.4 0 0 0 .487.494l4.607-1.204a10 10 0 0 0 4.76 1.207h.004c5.486 0 9.958-4.446 9.958-9.912a9.83 9.83 0 0 0-2.914-7.011A9.92 9.92 0 0 0 12.042 2c-5.486 0-9.958 4.446-9.958 9.911c0 1.739.458 3.447 1.33 4.954zm2.677-4.068a1.5 1.5 0 0 0-.148-1.15a8.4 8.4 0 0 1-1.129-4.202c0-4.63 3.793-8.411 8.458-8.411c2.27 0 4.388.877 5.986 2.468a8.33 8.33 0 0 1 2.472 5.948c0 4.63-3.793 8.412-8.458 8.412h-.005a8.5 8.5 0 0 1-4.044-1.026a1.5 1.5 0 0 0-1.094-.132l-2.762.721z" clip-rule="evenodd"/>
                 </svg>
-                {{ patient.phone }}
+                <a :href="`https://wa.me/52${patient.phone}`" target="_blank" class="phone-link">
+                  {{ formatPhone(patient.phone) }}
+                </a>
               </p>
             </div>
             <div class="info-item">
@@ -41,12 +44,12 @@
               <p class="info-value">{{ patient.age }} años</p>
             </div>
             <div class="info-item">
-              <label class="info-label">Fecha de Nacimiento</label>
+              <label class="info-label">Última Consulta</label>
               <p class="info-value">
                 <svg class="info-icon" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
                 </svg>
-                {{ patient.birthDate }}
+                {{ formatDate(patient.createdAt) }}
               </p>
             </div>
           </div>
@@ -64,22 +67,25 @@
         <div class="card-content">
           <div class="info-grid">
             <div class="info-item">
-              <label class="info-label">Altura</label>
-              <p class="info-value">
-                <svg class="info-icon" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M7 14l5-5 5 5z"/>
-                </svg>
-                {{ patient.height }}
-              </p>
+              <label class="info-label">Altura (cm) *</label>
+              <input 
+                type="text" 
+                v-model="consultation.height"
+                class="info-input"
+                :placeholder="patient.height ? `Último registro: ${patient.height} cm` : 'Ingrese la altura en cm'"
+                required
+              >
             </div>
             <div class="info-item">
-              <label class="info-label">Peso</label>
-              <p class="info-value">
-                <svg class="info-icon" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/>
-                </svg>
-                {{ patient.weight }}
-              </p>
+              <label class="info-label">Peso (kg) *</label>
+              <input 
+                type="text" 
+                v-model="consultation.weight"
+                class="info-input"
+                step="0.1"
+                :placeholder="patient.weight ? `Último registro: ${patient.weight} kg` : 'Ingrese el peso en kg'"
+                required
+              >
             </div>
           </div>
         </div>
@@ -94,7 +100,13 @@
           <h3 class="card-title">Tratamiento</h3>
         </div>
         <div class="card-content">
-          <p class="treatment-text">{{ patient.treatment }}</p>
+          <textarea 
+            v-model="consultation.treatment"
+            class="info-textarea"
+            rows="4"
+            :placeholder="patient.treatment"
+            required
+          ></textarea>
         </div>
       </div>
 
@@ -107,8 +119,27 @@
           <h3 class="card-title">Notas Adicionales</h3>
         </div>
         <div class="card-content">
-          <p class="notes-text">{{ patient.notes || 'No hay notas adicionales registradas.' }}</p>
+          <textarea 
+            v-model="consultation.notes"
+            class="info-textarea"
+            rows="3"
+            :placeholder="patient.notes ?? patient.notes"
+          ></textarea>
         </div>
+      </div>
+
+      <!-- Botón de guardar consulta -->
+      <div class="consultation-actions">
+        <button 
+          @click="saveConsultation" 
+          class="btn-primary save-consultation"
+          :disabled="isSaving"
+        >
+          <svg class="btn-icon" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+          </svg>
+          {{ isSaving ? 'Guardando...' : 'Registrar Nueva Consulta' }}
+        </button>
       </div>
     </div>
   </div>
@@ -119,7 +150,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePatientStore } from '../store/patientStore'
 
@@ -136,6 +167,51 @@ const patientStore = usePatientStore()
 const patient = computed(() => {
   return patientStore.getPatientById(props.id)
 })
+
+const consultation = ref({
+  date: new Date().toISOString().split('T')[0],
+  height: '',
+  weight: '',
+  treatment: '',
+  notes: ''
+})
+
+const isSaving = ref(false)
+
+const saveConsultation = async () => {
+  try {
+    isSaving.value = true
+    await patientStore.updatePatient(props.id, consultation.value)
+    // Limpiar el formulario después de guardar
+    consultation.value = {
+      date: new Date().toISOString().split('T')[0],
+      height: '',
+      weight: '',
+      treatment: '',
+      notes: ''
+    }
+  } catch (error) {
+    console.error('Error al guardar la consulta:', error)
+    // Aquí podrías mostrar un mensaje de error al usuario
+  } finally {
+    isSaving.value = false
+  }
+}
+
+const formatPhone = (phone) => {
+  if (!phone) return '';
+  // Remove any non-digit characters
+  const cleaned = phone.replace(/\D/g, '');
+  // Format as XXX-XXX-XXXX
+  return cleaned.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+};
+
+const formatDate = (date) => {
+  if (!date) return '';
+  const options = { year: 'numeric', month: 'long', day: 'numeric' };
+  const dateObj = new Date(date);
+  return dateObj.toLocaleDateString('es-ES', options);
+};
 
 const goBack = () => {
   router.push('/')
@@ -252,6 +328,31 @@ const goBack = () => {
   color: #6c757d;
 }
 
+.phone-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.phone-link {
+  color: #0d6efd;
+  text-decoration: none;
+  font-family: monospace;
+  letter-spacing: 1px;
+}
+
+.phone-link:hover {
+  text-decoration: underline;
+}
+
+.whatsapp-icon {
+  transition: transform 0.2s;
+}
+
+.whatsapp-icon:hover {
+  transform: scale(1.1);
+}
+
 .error-message {
   text-align: center;
   padding: 48px 24px;
@@ -262,6 +363,79 @@ const goBack = () => {
 .back-icon {
   width: 16px;
   height: 16px;
+}
+
+.info-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: #1f2937;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.info-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.date-input {
+  cursor: pointer;
+}
+
+.info-textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: #1f2937;
+  resize: vertical;
+  min-height: 100px;
+  border: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.info-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.consultation-actions {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.save-consultation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  background-color: #047857;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.save-consultation:hover:not(:disabled) {
+  background-color: #065f46;
+}
+
+.save-consultation:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.btn-icon {
+  width: 20px;
+  height: 20px;
 }
 
 @media (max-width: 768px) {

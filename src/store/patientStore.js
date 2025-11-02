@@ -62,7 +62,11 @@ export const usePatientStore = defineStore('patient', {
           lastName: p.last_name || p.lastName || '',
           phone: p.phone || '',
           age: p.age || null,
-          createdAt: p.created_at
+          createdAt: p.consultations[0]?.date || null,
+          height: p.consultations[0].height || null,
+          weight: p.consultations[0].weight || null,
+          treatment: p.consultations[0].treatment || null,
+          notes: p.consultations[0].notes || null
         }))
       } catch (error) {
         console.error('Error loading patients:', error)
@@ -73,10 +77,42 @@ export const usePatientStore = defineStore('patient', {
       this.patients.push({ ...patient, id: newId })
     },
     
-    updatePatient(id, updatedPatient) {
-      const index = this.patients.findIndex(p => p.id === id)
-      if (index !== -1) {
-        this.patients[index] = { ...this.patients[index], ...updatedPatient }
+    async updatePatient(id, consultation) {
+      try {
+        const headers = { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+
+        const res = await fetch(`http://localhost:8000/api/patients/${id}`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify(consultation)
+        })
+
+        if (!res.ok) {
+          const error = await res.json()
+          throw new Error(error.detail || 'No se pudo actualizar el paciente')
+        }
+
+        const updatedPatient = await res.json()
+        const index = this.patients.findIndex(p => p.id === id)
+        
+        if (index !== -1) {
+          this.patients[index] = {
+            ...this.patients[index],
+            height: consultation.height,
+            weight: consultation.weight,
+            treatment: consultation.treatment,
+            notes: consultation.notes,
+            createdAt: consultation.date
+          }
+        }
+
+        return updatedPatient
+      } catch (error) {
+        console.error('Error actualizando paciente:', error)
+        throw error
       }
     },
     
