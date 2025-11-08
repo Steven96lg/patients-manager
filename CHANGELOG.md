@@ -1,6 +1,25 @@
 # Changelog
 
-## [1.0.1] - 2025-10-31
+## [1.0.1] - 2025-11-08
+
+feat(2025-11-08): primer release.
+### Added
+Se terminaron las siguientes funcionalidades
+ - agregar usuarios
+ - ver y actualizar información del usuario
+ - eliminar usuario
+ - listar usuarios en la tabla
+
+- Se cubre la necesidad del usuario final
+
+- la intención de esta liberación parcial es que el usuario final empiece a interactuar con el sistema, que lo vaya pribando para que vaya sugiriendo mejoras y encontrando algunos errores
+
+### Next steps
+- Agregar la funcionalidad para actualizar la información del usuario.
+- Agregar funcionalidad para actualizar la información del paciente (esta diferente a agregar una nueva consulta).
+- Agregar generación de PDF
+
+## [1.0.1] - 2025-11-02
 
 feat(02-11-2025): Se agrego el guardado de la nueva consulta
 

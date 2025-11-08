@@ -8,9 +8,14 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+src
+public
+index.html
+package-lock.json
+package.json
+README.md
+vite.config.js
 .DS_Store
-dist
-dist-ssr
 coverage
 *.local
 
@@ -28,3 +33,4 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+ 
