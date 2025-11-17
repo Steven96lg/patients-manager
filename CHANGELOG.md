@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.1] - 2025-11-17
+
+feat(17-11-2025): Se genero un buscador de pacientes
+
 ## [1.0.1] - 2025-10-31
 
 feat(02-11-2025): Se agrego el guardado de la nueva consulta

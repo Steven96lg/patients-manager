@@ -13,6 +13,25 @@
       </button>
     </div>
 
+    <div class="patient-search">
+      <div class="search-wrapper">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+          <g fill="none" fill-rule="evenodd">
+            <path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/>
+            <path fill="currentColor" d="M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 0 0 0-13M2 10.5a8.5 8.5 0 1 1 15.176 5.262l3.652 3.652a1 1 0 0 1-1.414 1.414l-3.652-3.652A8.5 8.5 0 0 1 2 10.5M9.5 7a1 1 0 0 1 1-1a4.5 4.5 0 0 1 4.5 4.5a1 1 0 1 1-2 0A2.5 2.5 0 0 0 10.5 8a1 1 0 0 1-1-1"/>
+          </g>
+        </svg>
+        <input
+          class="search-input"
+          type="text"
+          v-model="searchTerm"
+          placeholder="Buscar por nombre, apellidos o teléfono"
+          aria-label="Buscar pacientes"
+        />
+        <button v-if="searchTerm" class="clear-search" @click="clearSearch" aria-label="Limpiar búsqueda">×</button>
+      </div>
+    </div>
+
     <div class="card">
       <div class="table-container">
         <table class="patient-table">
@@ -27,7 +46,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="patient in patients" :key="patient.id">
+            <tr v-for="patient in filteredPatients" :key="patient.id">
               <td class="patient-name">{{ patient.name }}</td>
               <td class="patient-name">{{ patient.lastName }}</td>
               <td>
@@ -57,7 +76,7 @@
 </template>
 
 <script setup>
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePatientStore } from '../store/patientStore'
 
@@ -68,6 +87,18 @@ const patients = computed(() => {
   return [...patientStore.patients].sort((a, b) => {
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
+})
+
+// Búsqueda
+const searchTerm = ref('')
+const filteredPatients = computed(() => {
+  const q = searchTerm.value.trim().toLowerCase()
+  if (!q) return patients.value
+  return patients.value.filter((p) => {
+    const phone = p.phone || ''
+    const full = `${p.name} ${p.lastName} ${phone}`.toLowerCase()
+    return full.includes(q)
+  })
 })
 
 const goToAddPatient = () => {
@@ -81,27 +112,26 @@ const viewPatient = (id) => {
 const formatDate = (date) => {
   if (!date) return '';
   const options = { year: 'numeric', month: 'long', day: 'numeric' };
-  // La fecha ya viene en formato ISO con Z al final, no necesitamos añadir nada
   const dateObj = new Date(date);
   return dateObj.toLocaleDateString('es-ES', options);
 };
 
 const formatPhone = (phone) => {
   if (!phone) return '';
-  // Remove any non-digit characters
   const cleaned = phone.replace(/\D/g, '');
-  // Format as XXX-XXX-XXXX
   return cleaned.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
 };
 
 const openWhatsApp = (phone) => {
   if (!phone) return;
-  // Remove any non-digit characters
   const cleaned = phone.replace(/\D/g, '');
-  // Add country code if not present (assuming Mexico)
   const phoneNumber = cleaned.startsWith('52') ? cleaned : `52${cleaned}`;
   window.open(`https://wa.me/${phoneNumber}`, '_blank');
 };
+
+const clearSearch = () => {
+  searchTerm.value = ''
+}
 
 onMounted(async () => {
   await patientStore.fetchPatients()
@@ -148,6 +178,63 @@ onMounted(async () => {
 .btn-icon {
   width: 20px;
   height: 20px;
+}
+
+.patient-search{
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.search-wrapper{
+  position: relative;
+  max-width: 520px;
+}
+
+.search-icon{
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: #6b7280;
+  pointer-events: none;
+}
+
+.search-input{
+  width: 100%;
+  padding: 10px 40px 10px 44px;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.search-input:focus{
+  outline: none;
+  border-color: white;
+  box-shadow: 0 0 0 4px rgba(226, 230, 228, 0.08);
+}
+
+.clear-search{
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.clear-search:hover{
+  background: #f3f4f6;
 }
 
 .table-container {
