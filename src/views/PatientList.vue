@@ -15,7 +15,7 @@
 
     <div class="patient-search">
       <div class="search-wrapper">
-        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" @click="applyFilter" role="button">
           <g fill="none" fill-rule="evenodd">
             <path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/>
             <path fill="currentColor" d="M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 0 0 0-13M2 10.5a8.5 8.5 0 1 1 15.176 5.262l3.652 3.652a1 1 0 0 1-1.414 1.414l-3.652-3.652A8.5 8.5 0 0 1 2 10.5M9.5 7a1 1 0 0 1 1-1a4.5 4.5 0 0 1 4.5 4.5a1 1 0 1 1-2 0A2.5 2.5 0 0 0 10.5 8a1 1 0 0 1-1-1"/>
@@ -29,6 +29,19 @@
           aria-label="Buscar pacientes"
         />
         <button v-if="searchTerm" class="clear-search" @click="clearSearch" aria-label="Limpiar búsqueda">×</button>
+      </div>
+      
+      <div class="patients-filter">
+        <div class="filter-container">
+          <label for="recordsSelect" class="filter-label">Total de pacientes por página:</label>
+          <select id="recordsSelect" v-model="patientsLimit" class="filter-select" aria-label="Registros por página" @change="applyFilter">
+            <option :value="10">10 registros</option>
+            <option :value="20">20 registros</option>
+            <option :value="30">30 registros</option>
+            <option :value="40">40 registros</option>
+            <option :value="50">50 registros</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -60,16 +73,43 @@
               <td>{{ patient.age }} años</td>
               <td>{{ formatDate(patient.createdAt) }}</td>
               <td>
-                <button class="btn-secondary view-btn" @click="viewPatient(patient.id)">
-                  <svg class="btn-icon" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                  </svg>
-                  Ver más
-                </button>
+                <div class="actions-group">
+                  <button class="btn-secondary view-btn" @click="viewPatient(patient.id)">
+                    <svg class="btn-icon" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                    </svg>
+                    Ver más
+                  </button>
+                  <button class="btn-danger delete-btn" @click="deletePatientHandler(patient.id)">
+                    <svg class="btn-icon" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-9l-1 1H5v2h14V4z"/>
+                    </svg>
+                    Eliminar
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+      <div v-if="patientStore.totalPatients > patientsLimit.value" class="pagination">
+        <button 
+          class="btn-pagination" 
+          @click="goToPreviousPage" 
+          :disabled="!hasPreviousPage"
+          aria-label="Página anterior"
+        >
+          ← Anterior
+        </button>
+        <span class="pagination-info">Página {{ patientStore.currentPage }} de {{ totalPages }}</span>
+        <button 
+          class="btn-pagination" 
+          @click="goToNextPage" 
+          :disabled="!hasNextPage"
+          aria-label="Página siguiente"
+        >
+          Siguiente →
+        </button>
       </div>
     </div>
   </div>
@@ -91,14 +131,29 @@ const patients = computed(() => {
 
 // Búsqueda
 const searchTerm = ref('')
+const patientsLimit = ref(10)
+const currentPage = ref(1)
+
 const filteredPatients = computed(() => {
-  const q = searchTerm.value.trim().toLowerCase()
-  if (!q) return patients.value
-  return patients.value.filter((p) => {
-    const phone = p.phone || ''
-    const full = `${p.name} ${p.lastName} ${phone}`.toLowerCase()
-    return full.includes(q)
+  // Ordena por createdAt (fecha de consulta/registro) descendente
+  const sorted = [...patientStore.patients].sort((a, b) => {
+    const dateA = new Date(a.createdAt) || new Date(0)
+    const dateB = new Date(b.createdAt) || new Date(0)
+    return dateB - dateA
   })
+  return sorted.slice(0, patientsLimit.value)
+})
+
+const totalPages = computed(() => {
+  return Math.ceil(patientStore.totalPatients / patientsLimit.value)
+})
+
+const hasNextPage = computed(() => {
+  return patientStore.currentPage < totalPages.value
+})
+
+const hasPreviousPage = computed(() => {
+  return patientStore.currentPage > 1
 })
 
 const goToAddPatient = () => {
@@ -129,12 +184,44 @@ const openWhatsApp = (phone) => {
   window.open(`https://wa.me/${phoneNumber}`, '_blank');
 };
 
-const clearSearch = () => {
+const clearSearch = async () => {
   searchTerm.value = ''
+  await patientStore.fetchPatients(patientsLimit.value, '', currentPage.value)
+}
+
+const goToNextPage = async () => {
+  if (hasNextPage.value) {
+    currentPage.value += 1
+    await patientStore.fetchPatients(patientsLimit.value, searchTerm.value, currentPage.value)
+  }
+}
+
+const goToPreviousPage = async () => {
+  if (hasPreviousPage.value) {
+    currentPage.value -= 1
+    await patientStore.fetchPatients(patientsLimit.value, searchTerm.value, currentPage.value)
+  }
+}
+
+const deletePatientHandler = async (patientId) => {
+  if (confirm('¿Estás seguro de que deseas eliminar este paciente? Esta acción no se puede deshacer.')) {
+    try {
+      await patientStore.deletePatient(patientId)
+      // Recarga los datos después de eliminar
+      await patientStore.fetchPatients(patientsLimit.value, searchTerm.value, currentPage.value)
+    } catch (error) {
+      alert('Error al eliminar el paciente: ' + error.message)
+    }
+  }
+}
+
+const applyFilter = async () => {
+  currentPage.value = 1
+  await patientStore.fetchPatients(patientsLimit.value, searchTerm.value, currentPage.value)
 }
 
 onMounted(async () => {
-  await patientStore.fetchPatients()
+  await patientStore.fetchPatients(patientsLimit.value, searchTerm.value, currentPage.value)
 })
 </script>
 
@@ -183,11 +270,36 @@ onMounted(async () => {
 .patient-search{
   margin-bottom: 20px;
   width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
 }
 
 .search-wrapper{
   position: relative;
+  flex: 1;
+  min-width: 280px;
   max-width: 520px;
+}
+
+.patients-filter{
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.filter-container{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-label{
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  white-space: nowrap;
 }
 
 .search-icon{
@@ -198,7 +310,12 @@ onMounted(async () => {
   width: 18px;
   height: 18px;
   color: #6b7280;
-  pointer-events: none;
+  transition: color 0.2s;
+  cursor: pointer;
+}
+
+.search-icon:hover{
+  color: #10b981;
 }
 
 .search-input{
@@ -214,8 +331,26 @@ onMounted(async () => {
 
 .search-input:focus{
   outline: none;
-  border-color: white;
-  box-shadow: 0 0 0 4px rgba(226, 230, 228, 0.08);
+  border-color: #10b981;
+  box-shadow: 0 0 0 4px rgba(16,185,129,0.08);
+}
+
+.filter-select{
+  padding: 10px 12px;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.filter-select:focus{
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 4px rgba(16,185,129,0.08);
 }
 
 .clear-search{
@@ -259,6 +394,12 @@ onMounted(async () => {
   padding: 16px 12px;
   border-bottom: 1px solid #e9ecef;
   color: #495057;
+  max-width: 150px;
+}
+
+.patient-table td.actions-buttons {
+  display: flex;
+  gap: 8px;
 }
 
 .patient-table td.patient-name {
@@ -285,12 +426,83 @@ onMounted(async () => {
   background-color: #f8f9fa;
 }
 
+.actions-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .view-btn {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
   font-size: 14px;
+}
+
+.delete-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #fff;
+  background-color: #ef4444;
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-btn:hover {
+  background-color: #dc2626;
+  border-color: #dc2626;
+}
+
+.delete-btn:active {
+  background-color: #b91c1c;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-top: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 500;
+  min-width: 150px;
+  text-align: center;
+}
+
+.btn-pagination {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #10b981;
+  background-color: #fff;
+  border: 1px solid #10b981;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-pagination:hover:not(:disabled) {
+  background-color: #10b981;
+  color: #fff;
+}
+
+.btn-pagination:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: #d1d5db;
+  border-color: #d1d5db;
 }
 
 @media (max-width: 768px) {
@@ -306,6 +518,28 @@ onMounted(async () => {
   
   .add-patient-btn {
     align-self: flex-start;
+  }
+  
+  .patient-search{
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-wrapper{
+    max-width: 100%;
+  }
+  
+  .patients-filter{
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filter-container{
+    width: 100%;
+  }
+  
+  .filter-select{
+    width: 100%;
   }
 }
 </style>

@@ -2,8 +2,9 @@ import { defineStore } from 'pinia'
 
 export const usePatientStore = defineStore('patient', {
   state: () => ({
-    // Inicialmente vacío; se poblará desde el endpoint /api/patients
-    patients: []
+    patients: [],
+    totalPatients: 0,
+    currentPage: 1
   }),
   
   getters: {
@@ -43,19 +44,31 @@ export const usePatientStore = defineStore('patient', {
         throw error
       }
     },
-    async fetchPatients() {
+    async fetchPatients(limit = 10, searchTerm = '', page = 1) {
       try {
         const headers = { 'Content-Type': 'application/json' }
         const token = localStorage.getItem('auth_token') || this.token
         if (token) headers['Authorization'] = `Bearer ${token}`
 
-        const res = await fetch('http://localhost:8000/api/patients', { headers })
+        let url = 'http://localhost:8000/api/patients'
+        const params = new URLSearchParams()
+        if (limit) params.append('limit', limit)
+        if (searchTerm) params.append('search', searchTerm)
+        params.append('page', page)
+        if (params.toString()) url += `?${params.toString()}`
+
+        const res = await fetch(url, { headers })
         if (!res.ok) {
           console.error('Error fetching patients:', res.status)
           return
         }
         const data = await res.json()
-        const list = Array.isArray(data) ? data : (data.data || [])
+        
+        // Maneja tanto respuesta con estructura {data, total} como array directo
+        let list = Array.isArray(data) ? data : (data.data || [])
+        this.totalPatients = data.total || list.length
+        this.currentPage = page
+        
         this.patients = list.map(p => ({
           id: p.id,
           name: p.name,
@@ -116,8 +129,32 @@ export const usePatientStore = defineStore('patient', {
       }
     },
     
-    deletePatient(id) {
-      this.patients = this.patients.filter(p => p.id !== id)
+    async deletePatient(id) {
+      try {
+        const headers = { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+
+        const res = await fetch(`http://localhost:8000/api/patients/${id}`, {
+          method: 'DELETE',
+          headers
+        })
+
+        if (!res.ok) {
+          const error = await res.json()
+          throw new Error(error.detail || 'No se pudo eliminar el paciente')
+        }
+
+        // Eliminar del estado local
+        this.patients = this.patients.filter(p => p.id !== id)
+        this.totalPatients -= 1
+
+        return true
+      } catch (error) {
+        console.error('Error eliminando paciente:', error)
+        throw error
+      }
     }
   }
 })
