@@ -44,7 +44,7 @@ export const usePatientStore = defineStore('patient', {
         throw error
       }
     },
-    async fetchPatients(limit = 10, searchTerm = '', page = 1) {
+    async fetchPatients(limit = 10, searchTerm = '') {
       try {
         const headers = { 'Content-Type': 'application/json' }
         const token = localStorage.getItem('auth_token') || this.token
@@ -54,7 +54,6 @@ export const usePatientStore = defineStore('patient', {
         const params = new URLSearchParams()
         if (limit) params.append('limit', limit)
         if (searchTerm) params.append('search', searchTerm)
-        params.append('page', page)
         if (params.toString()) url += `?${params.toString()}`
 
         const res = await fetch(url, { headers })
@@ -67,7 +66,7 @@ export const usePatientStore = defineStore('patient', {
         // Maneja tanto respuesta con estructura {data, total} como array directo
         let list = Array.isArray(data) ? data : (data.data || [])
         this.totalPatients = data.total || list.length
-        this.currentPage = page
+     
         
         this.patients = list.map(p => ({
           id: p.id,

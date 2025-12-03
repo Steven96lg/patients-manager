@@ -1,5 +1,39 @@
 <template>
-  <div class="patient-detail" v-if="patient">
+  <!-- Loader -->
+  <div v-if="isLoading" class="loader-container">
+    <div class="loader">
+      <div class="spinner"></div>
+      <p>Cargando información del paciente...</p>
+    </div>
+  </div>
+
+  <!-- Mensaje de error - Paciente no encontrado -->
+  <div v-else-if="errorMessage === 'not_found'" class="error-container">
+    <div class="error-box">
+      <svg class="error-icon" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+      </svg>
+      <h2 class="error-title">Paciente no encontrado</h2>
+      <p class="error-text">No se pudo localizar al paciente que buscas. Verifica que el ID sea correcto.</p>
+      <button @click="goBack" class="btn-back">Volver a la lista</button>
+    </div>
+  </div>
+
+  <!-- Mensaje de error - Error del servicio -->
+  <div v-else-if="errorMessage === 'error'" class="error-container">
+    <div class="error-box">
+      <svg class="error-icon" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+      </svg>
+      <h2 class="error-title">Error al cargar los datos</h2>
+      <p class="error-text">Ocurrió un problema al conectar con el servidor. Por favor, vuelve a intentarlo.</p>
+      <button @click="loadConsultations" class="btn-retry">Reintentar</button>
+      <button @click="goBack" class="btn-back secondary">Volver a la lista</button>
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div v-else class="patient-detail" v-if="patient">
     <a href="#" class="back-link" @click.prevent="goBack">
       <svg class="back-icon" fill="currentColor" viewBox="0 0 24 24">
         <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
@@ -10,6 +44,25 @@
     <div class="patient-header">
       <h1 class="patient-name">{{ patient.name }} {{ patient.lastName }}</h1>
       <p class="patient-subtitle">Información completa del paciente</p>
+    </div>
+
+    <!-- Selector de historial de consultas -->
+    <div v-if="consultations.length > 1" class="consultation-selector">
+      <label for="consultationSelect" class="selector-label">Historial de Consultas:</label>
+      <select 
+        id="consultationSelect"
+        v-model="selectedConsultationIndex" 
+        @change="updateConsultationDisplay"
+        class="consultation-select"
+      >
+        <option 
+          v-for="(consult, index) in consultations" 
+          :key="index" 
+          :value="index"
+        >
+          {{ formatDate(consult.date) }}
+        </option>
+      </select>
     </div>
 
     <div class="info-cards">
@@ -71,6 +124,7 @@
               <input 
                 type="text" 
                 v-model="consultation.height"
+                @input="validateNumericInput"
                 class="info-input"
                 :placeholder="patient.height ? `Último registro: ${patient.height} cm` : 'Ingrese la altura en cm'"
                 required
@@ -81,8 +135,8 @@
               <input 
                 type="text" 
                 v-model="consultation.weight"
+                @input="validateNumericInput"
                 class="info-input"
-                step="0.1"
                 :placeholder="patient.weight ? `Último registro: ${patient.weight} kg` : 'Ingrese el peso en kg'"
                 required
               >
@@ -143,16 +197,16 @@
       </div>
     </div>
   </div>
-  
-  <div v-else class="error-message">
-    <p>Paciente no encontrado</p>
-  </div>
+  <ModalInfo :action-type="actionType"/>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePatientStore } from '../store/patientStore'
+import ModalInfo from '../components/ModalInfo.vue'
+
+const actionType = ref("")
 
 const props = defineProps({
   id: {
@@ -164,8 +218,14 @@ const props = defineProps({
 const router = useRouter()
 const patientStore = usePatientStore()
 
+const consultations = ref([])
+const selectedConsultationIndex = ref('0')
+const patientData = ref(null)
+const isLoading = ref(true)
+const errorMessage = ref(null)
+
 const patient = computed(() => {
-  return patientStore.getPatientById(props.id)
+  return patientData.value || patientStore.getPatientById(props.id)
 })
 
 const consultation = ref({
@@ -178,10 +238,148 @@ const consultation = ref({
 
 const isSaving = ref(false)
 
+const resetActionType = () => {
+  window.scrollTo({
+    top: 0,
+    left: 0,
+    behavior: 'auto' // o 'auto' si no quieres animación
+  })
+  setTimeout(() => {
+    actionType.value = ''
+  }, 3000)
+}
+
+const loadConsultations = async () => {
+  try {
+    isLoading.value = true
+    errorMessage.value = null
+    
+    const headers = { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    }
+    const res = await fetch(`http://localhost:8000/api/patients/${props.id}`, {
+      headers
+    })
+    
+    if (!res.ok) {
+      // Si el status es 404, el paciente no existe
+      if (res.status === 404) {
+        errorMessage.value = 'not_found'
+      } else {
+        // Cualquier otro error
+        errorMessage.value = 'error'
+      }
+      return
+    }
+    
+    const data = await res.json()
+    
+    // Guardar datos del paciente
+    patientData.value = {
+      id: data.id,
+      name: data.name,
+      lastName: data.last_name || data.lastName || '',
+      phone: data.phone || '',
+      age: data.age || null,
+      height: data.consultations?.[0]?.height || null,
+      weight: data.consultations?.[0]?.weight || null,
+      treatment: data.consultations?.[0]?.treatment || null,
+      notes: data.consultations?.[0]?.notes || null,
+      createdAt: data.consultations?.[0]?.date || null
+    }
+    
+    if (data.consultations && Array.isArray(data.consultations)) {
+      consultations.value = data.consultations.map(c => ({
+        date: c.date,
+        height: c.height,
+        weight: c.weight,
+        treatment: c.treatment,
+        notes: c.notes
+      }))
+      consultations.value.reverse() // Ordenar de más reciente a más antiguo
+      // Si hay consultas, mostrar la primera (más reciente)
+      if (consultations.value.length > 0) {
+        selectedConsultationIndex.value = '0'
+        updateConsultationDisplay()
+      }
+    }
+    errorMessage.value = null
+  } catch (error) {
+    console.error('Error al cargar consultas:', error)
+    errorMessage.value = 'error'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const updateConsultationDisplay = () => {
+  const index = parseInt(selectedConsultationIndex.value)
+  if (consultations.value.length > 0 && index < consultations.value.length) {
+    const selected = consultations.value[index]
+    consultation.value = {
+      date: selected.date || new Date().toISOString().split('T')[0],
+      height: selected.height || '',
+      weight: selected.weight || '',
+      treatment: selected.treatment || '',
+      notes: selected.notes || ''
+    }
+  }
+}
+
+onMounted(async () => {
+  // Cargar consultas al montar el componente
+  await loadConsultations()
+})
+
 const saveConsultation = async () => {
   try {
     isSaving.value = true
-    await patientStore.updatePatient(props.id, consultation.value)
+    
+    // Obtener datos del último registro o usar los ingresados
+    const lastConsultation = consultations.value.length > 0 ? consultations.value[0] : {}
+    
+    // Convertir a números y validar
+    const height = consultation.value.height ? parseFloat(consultation.value.height) : (lastConsultation.height ? parseFloat(lastConsultation.height) : null)
+    const weight = consultation.value.weight ? parseFloat(consultation.value.weight) : (lastConsultation.weight ? parseFloat(lastConsultation.weight) : null)
+    const treatment = consultation.value.treatment || lastConsultation.treatment
+    const notes = consultation.value.notes || lastConsultation.notes
+    
+    // Validar campos requeridos
+    if (!height || !weight || !treatment) {
+      console.error('Faltan campos requeridos')
+      return
+    }
+    
+    const consultationData = {
+      height,
+      weight,
+      treatment,
+      notes: notes || null,
+      patient_id: parseInt(props.id)
+    }
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    }
+    
+    const res = await fetch(`http://localhost:8000/api/patients/${props.id}/consultations`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(consultationData)
+    })
+    
+    if (!res.ok) {
+      const errorData = await res.json()
+      actionType.value = 'error'
+      resetActionType()
+      throw new Error(errorData.detail || 'Error al guardar la consulta')
+    }
+    
+    // Recargar los datos del paciente para actualizar la lista de consultas
+    await loadConsultations()
+    
     // Limpiar el formulario después de guardar
     consultation.value = {
       date: new Date().toISOString().split('T')[0],
@@ -190,7 +388,11 @@ const saveConsultation = async () => {
       treatment: '',
       notes: ''
     }
+    actionType.value = 'success'
+    resetActionType()
   } catch (error) {
+    actionType.value = 'error'
+    resetActionType()
     console.error('Error al guardar la consulta:', error)
     // Aquí podrías mostrar un mensaje de error al usuario
   } finally {
@@ -216,6 +418,15 @@ const formatDate = (date) => {
 const goBack = () => {
   router.push('/')
 }
+
+const validateNumericInput = (event) => {
+  // Permitir solo números y punto decimal
+  const value = event.target.value
+  const isValid = /^\d*\.?\d*$/.test(value)
+  if (!isValid) {
+    event.target.value = value.replace(/[^\d.]/g, '')
+  }
+}
 </script>
 
 <style scoped>
@@ -239,6 +450,42 @@ const goBack = () => {
   font-size: 16px;
   color: #6c757d;
   margin: 0;
+}
+
+.consultation-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.selector-label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.consultation-select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+  background-color: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.consultation-select:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 4px rgba(16,185,129,0.08);
 }
 
 .info-cards {
@@ -358,6 +605,132 @@ const goBack = () => {
   padding: 48px 24px;
   color: #dc3545;
   font-size: 18px;
+}
+
+.loader-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.loader {
+  text-align: center;
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  margin: 0 auto 20px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #10b981;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loader p {
+  color: #495057;
+  font-size: 16px;
+  margin: 0;
+}
+
+.error-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 20px;
+}
+
+.error-box {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 500px;
+}
+
+.error-icon {
+  width: 60px;
+  height: 60px;
+  color: #dc2626;
+  margin: 0 auto 20px;
+  display: block;
+}
+
+.error-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #dc2626;
+  margin: 0 0 12px 0;
+}
+
+.error-text {
+  font-size: 16px;
+  color: #6c757d;
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+}
+
+.btn-retry,
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-right: 12px;
+  margin-top: 12px;
+}
+
+.btn-retry {
+  background-color: #10b981;
+  color: white;
+}
+
+.btn-retry:hover {
+  background-color: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-back {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.btn-back:hover {
+  background-color: #d1d5db;
+  transform: translateY(-2px);
+}
+
+.btn-back.secondary {
+  background-color: transparent;
+  color: #10b981;
+  border: 2px solid #10b981;
+  margin-right: 0;
+}
+
+.btn-back.secondary:hover {
+  background-color: #f0fdf4;
 }
 
 .back-icon {

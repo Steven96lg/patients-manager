@@ -394,7 +394,7 @@ onMounted(async () => {
   padding: 16px 12px;
   border-bottom: 1px solid #e9ecef;
   color: #495057;
-  max-width: 150px;
+  max-width: 180px;
 }
 
 .patient-table td.actions-buttons {

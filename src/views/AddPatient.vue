@@ -257,6 +257,8 @@ const submitForm = async () => {
     }
 
     await patientStore.createPatient(patient)
+    // Refrescar la lista de pacientes para mostrar el nuevo paciente al inicio
+    await patientStore.fetchPatients(10, '', 1)
     router.push('/')
   } catch (error) {
     errorMessage.value = error.message || 'Error al crear paciente'
