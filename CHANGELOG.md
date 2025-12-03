@@ -2,6 +2,10 @@
 
 ## [1.0.1] - 2025-11-17
 
+feat(03-12-2025): Primer version para despliegue.
+- Se agrego el modal para mostrar cuando una consulta se guardo exitosamente o no pudo ser procesada.
+- Se agrego el select para alternar entre las consultas que ha tenido el paciente a lo largo del tiempo.
+
 feat(01-12-2025): Se agrego buscador y selector de registro para mostrar el total de clientes
 
 feat(17-11-2025): Se genero un buscador de pacientes
