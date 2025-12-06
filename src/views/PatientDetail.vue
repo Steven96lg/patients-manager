@@ -258,7 +258,7 @@ const loadConsultations = async () => {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
     }
-    const res = await fetch(`http://localhost:8000/api/patients/${props.id}`, {
+    const res = await fetch(`https://patients-manager-backend.onrender.com/api/patients/${props.id}`, {
       headers
     })
     
@@ -364,7 +364,7 @@ const saveConsultation = async () => {
       'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
     }
     
-    const res = await fetch(`http://localhost:8000/api/patients/${props.id}/consultations`, {
+    const res = await fetch(`https://patients-manager-backend.onrender.com/api/patients/${props.id}/consultations`, {
       method: 'POST',
       headers,
       body: JSON.stringify(consultationData)

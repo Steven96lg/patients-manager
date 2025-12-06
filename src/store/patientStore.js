@@ -20,7 +20,7 @@ export const usePatientStore = defineStore('patient', {
         const token = localStorage.getItem('auth_token') || this.token
         if (token) headers['Authorization'] = `Bearer ${token}`
 
-        const res = await fetch('http://localhost:8000/api/create_patient', {
+        const res = await fetch('https://patients-manager-backend.onrender.com/api/create_patient', {
           method: 'POST',
           headers,
           body: JSON.stringify(patient)
@@ -50,7 +50,7 @@ export const usePatientStore = defineStore('patient', {
         const token = localStorage.getItem('auth_token') || this.token
         if (token) headers['Authorization'] = `Bearer ${token}`
 
-        let url = 'http://localhost:8000/api/patients'
+        let url = 'https://patients-manager-backend.onrender.com/api/patients'
         const params = new URLSearchParams()
         if (limit) params.append('limit', limit)
         if (searchTerm) params.append('search', searchTerm)
@@ -96,7 +96,7 @@ export const usePatientStore = defineStore('patient', {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
 
-        const res = await fetch(`http://localhost:8000/api/patients/${id}`, {
+        const res = await fetch(`https://patients-manager-backend.onrender.com/api/patients/${id}`, {
           method: 'PATCH',
           headers,
           body: JSON.stringify(consultation)
@@ -135,7 +135,7 @@ export const usePatientStore = defineStore('patient', {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
 
-        const res = await fetch(`http://localhost:8000/api/patients/${id}`, {
+        const res = await fetch(`https://patients-manager-backend.onrender.com/api/patients/${id}`, {
           method: 'DELETE',
           headers
         })

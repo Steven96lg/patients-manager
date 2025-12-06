@@ -20,7 +20,7 @@ export const useAuthStore = defineStore('auth', {
         console.log('Obteniendo información del usuario...')
         const token = localStorage.getItem('auth_token') || this.token
         if (!token) throw new Error('No hay token de autenticación')
-        const res = await fetch('http://localhost:8000/api/user_info', {
+        const res = await fetch('https://patients-manager-backend.onrender.com/api/user_info', {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
